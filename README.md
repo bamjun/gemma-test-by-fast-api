@@ -2,6 +2,27 @@
 
 이 프로젝트는 Mac 기반의 MLX(`mlx_lm`) 모델을 OpenClaw와 같은 외부 AI Agent 프레임워크에 연결하기 위한 **중간 어댑터(Adapter) 서버**입니다.
 
+## quick test
+
+```bash
+git clone https://github.com/bamjun/gemma-test-by-fast-api.git
+cd gemma-test-by-fast-api
+uv run fastapi dev main.py
+```
+
+```
+curl \
+  -X GET http://localhost:8000/chat?q=안녕하세요
+
+curl \
+  -X POST http://localhost:8000/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{"model": "supergemma4", "messages": [{"role": "user", "content": "안녕하세요"}]}'
+```
+
+![result](https://private-user-images.githubusercontent.com/21354840/586824299-6477dc91-9f02-4ed7-88a9-c17044b3a72d.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3Nzc4MDI4MzksIm5iZiI6MTc3NzgwMjUzOSwicGF0aCI6Ii8yMTM1NDg0MC81ODY4MjQyOTktNjQ3N2RjOTEtOWYwMi00ZWQ3LTg4YTktYzE3MDQ0YjNhNzJkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA1MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNTAzVDEwMDIxOVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY5Mjc1Y2U1ZTA0NTI5Y2IwOTlkOWYwZWYzY2U3ODU3ZDMzZTczNmQ0MTNlYmMxNzRlM2FlNzJkYTRhM2Y3YzQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.mygXEQwoqu9G__ddcuify-3d6uwSi2wSD91FHFQniBc)
+
+
 ## 🏗️ 전체 구조 (Architecture)
 
 OpenClaw는 외부 모델과 통신할 때 **OpenAI API 규격**(예: `/v1/chat/completions`)을 기대합니다. 반면 MLX 모델은 단순 텍스트 프롬프트를 기반으로 동작합니다. 따라서 이 FastAPI 서버가 중간에서 **요청과 응답의 규격을 번역**해주는 역할을 합니다.
