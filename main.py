@@ -28,7 +28,17 @@ model, tokenizer = load("Jiunsong/supergemma4-e4b-abliterated-mlx")
 # --- 기존 단순 엔드포인트 ---
 @app.get("/chat")
 async def chat(q: str):
-    return {"response": generate(model, tokenizer, prompt=q)}
+    messages_dict = [{"role": "user", "content": q}]
+    try:
+        prompt = tokenizer.apply_chat_template(
+            messages_dict, 
+            tokenize=False, 
+            add_generation_prompt=True
+        )
+    except Exception:
+        prompt = f"<start_of_turn>user\n{q}<end_of_turn>\n<start_of_turn>model\n"
+        
+    return {"response": generate(model, tokenizer, prompt=prompt)}
 
 
 # --- OpenClaw 연결용 Adapter (OpenAI 호환 포맷) ---
