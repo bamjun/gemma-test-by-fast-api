@@ -20,7 +20,7 @@ curl \
   -d '{"model": "supergemma4", "messages": [{"role": "user", "content": "안녕하세요"}]}'
 ```
 
-![result](https://private-user-images.githubusercontent.com/21354840/586824299-6477dc91-9f02-4ed7-88a9-c17044b3a72d.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3Nzc4MDI4MzksIm5iZiI6MTc3NzgwMjUzOSwicGF0aCI6Ii8yMTM1NDg0MC81ODY4MjQyOTktNjQ3N2RjOTEtOWYwMi00ZWQ3LTg4YTktYzE3MDQ0YjNhNzJkLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjA1MDMlMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwNTAzVDEwMDIxOVomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTY5Mjc1Y2U1ZTA0NTI5Y2IwOTlkOWYwZWYzY2U3ODU3ZDMzZTczNmQ0MTNlYmMxNzRlM2FlNzJkYTRhM2Y3YzQmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0JnJlc3BvbnNlLWNvbnRlbnQtdHlwZT1pbWFnZSUyRnBuZyJ9.mygXEQwoqu9G__ddcuify-3d6uwSi2wSD91FHFQniBc)
+![result](https://github.com/bamjun/screenshots/blob/main/gemma-test-by-fast-api/586824299-6477dc91-9f02-4ed7-88a9-c17044b3a72d.png?raw=true)
 
 
 ## 🏗️ 전체 구조 (Architecture)
