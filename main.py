@@ -10,7 +10,8 @@
 # ]
 # ///
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 import time
@@ -26,6 +27,12 @@ def custom_load_weights(self, weights, strict=True):
 nn.Module.load_weights = custom_load_weights
 
 app = FastAPI()
+
+import os
+import uuid
+# 이미지 저장용 폴더 생성 및 마운트 (정적 파일 서빙)
+os.makedirs("outputs", exist_ok=True)
+app.mount("/outputs", StaticFiles(directory="outputs"), name="outputs")
 
 model, tokenizer = load("Jiunsong/supergemma4-e4b-abliterated-mlx")
 
@@ -123,28 +130,32 @@ class ImageGenerationRequest(BaseModel):
     size: Optional[str] = "512x512"
 
 @app.post("/v1/images/generations")
-async def openclaw_image_adapter(req: ImageGenerationRequest):
+async def openclaw_image_adapter(req_body: ImageGenerationRequest, request: Request):
     # 크기 파싱
     width, height = 512, 512
-    if req.size and "x" in req.size:
-        parts = req.size.split("x")
+    if req_body.size and "x" in req_body.size:
+        parts = req_body.size.split("x")
         if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
             width, height = int(parts[0]), int(parts[1])
             
     # 이미지 생성 (MPS 가속)
-    image = sd_pipe(req.prompt, width=width, height=height, num_inference_steps=25).images[0]
+    image = sd_pipe(req_body.prompt, width=width, height=height, num_inference_steps=25).images[0]
     
-    # Base64 문자열로 인코딩
-    buffered = BytesIO()
-    image.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    # 고유한 파일명 생성 및 하드디스크에 저장
+    filename = f"{uuid.uuid4().hex}.png"
+    filepath = os.path.join("outputs", filename)
+    image.save(filepath, format="PNG")
     
-    # OpenAI 이미지 API 호환 규격으로 반환
+    # 현재 접속한 호스트(로컬호스트 또는 클라우드플레어 터널 도메인)를 기반으로 전체 URL 생성
+    # 예: https://my-tunnel.trycloudflare.com/outputs/abcd.png
+    image_url = str(request.base_url) + f"outputs/{filename}"
+    
+    # OpenAI 이미지 API 호환 규격으로 반환 (url 방식)
     return {
         "created": int(time.time()),
         "data": [
             {
-                "b64_json": img_str
+                "url": image_url
             }
         ]
     }
