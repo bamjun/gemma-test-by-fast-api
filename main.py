@@ -114,48 +114,59 @@ import os
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
 import torch
-from diffusers import AutoPipelineForText2Image
+from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDiscreteScheduler
+from huggingface_hub import hf_hub_download, login
+from safetensors.torch import load_file
 import base64
 from io import BytesIO
 from dotenv import load_dotenv
-from huggingface_hub import login
 
 # 환경 변수 명시적 로드 (.env)
 load_dotenv()
 
 hf_token = os.getenv("HF_TOKEN")
 if hf_token:
-    # diffusers의 from_single_file 내부에서 token 파라미터를 누락하는 버그를 우회하기 위해 전역 로그인 수행
+    # diffusers 내부 버그 우회를 위한 전역 로그인 수행
     login(token=hf_token)
 
-print("Loading SDXL Turbo...")
-sd_pipe = AutoPipelineForText2Image.from_pretrained(
-    "stabilityai/sdxl-turbo",
-    torch_dtype=torch.float16,
+print("Loading SDXL-Lightning (4-step)...")
+base = "stabilityai/stable-diffusion-xl-base-1.0"
+repo = "ByteDance/SDXL-Lightning"
+ckpt = "sdxl_lightning_4step_unet.safetensors"
+
+# UNet 로드 및 Lightning 가중치 적용 (MPS 버그 방지를 위해 bfloat16 사용)
+unet = UNet2DConditionModel.from_config(base, subfolder="unet").to(torch.bfloat16)
+unet.load_state_dict(load_file(hf_hub_download(repo, ckpt)))
+
+sd_pipe = StableDiffusionXLPipeline.from_pretrained(
+    base, 
+    unet=unet, 
+    torch_dtype=torch.bfloat16, 
     variant="fp16",
     token=hf_token
-)
-sd_pipe = sd_pipe.to("mps")
+).to("mps")
 
-# MPS(Apple Silicon)에서 float16 정밀도 계산 시 VAE 오버플로우로 인해 검정 이미지가 나오는 것을 방지하기 위해, VAE만 float32로 강제 캐스팅합니다.
+# Lightning은 Trailing timestep spacing 필수
+sd_pipe.scheduler = EulerDiscreteScheduler.from_config(sd_pipe.scheduler.config, timestep_spacing="trailing")
+
+# MPS(Apple Silicon) 검정 이미지 버그 방지를 위해 VAE만 float32 캐스팅
 sd_pipe.vae = sd_pipe.vae.to(torch.float32)
 
 class ImageGenerationRequest(BaseModel):
     prompt: str
     n: Optional[int] = 1
-    size: Optional[str] = "512x512"
+    size: Optional[str] = "1024x1024"
 
 @app.post("/v1/images/generations")
 async def openclaw_image_adapter(req_body: ImageGenerationRequest, request: Request):
-    # 크기 파싱
-    width, height = 512, 512
+    # 기본 크기를 1024x1024로 설정 (SDXL-Lightning 권장 해상도)
+    width, height = 1024, 1024
     if req_body.size and "x" in req_body.size:
         parts = req_body.size.split("x")
         if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
             width, height = int(parts[0]), int(parts[1])
             
-    # 이미지 생성 (MPS 가속)
-    # SDXL Turbo 모델은 1~4스텝으로 고품질 이미지를 생성합니다.
+    # SDXL-Lightning 모델은 4스텝으로 1024x1024 고해상도 이미지를 생성합니다.
     image = sd_pipe(req_body.prompt, width=width, height=height, num_inference_steps=4, guidance_scale=0.0).images[0]
     
     # 고유한 파일명 생성 및 하드디스크에 저장
