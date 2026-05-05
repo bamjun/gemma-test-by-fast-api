@@ -45,13 +45,17 @@ OpenClaw는 외부 모델과 통신할 때 **OpenAI API 규격**(예: `/v1/chat/
 
 ## 🚀 구동 방법
 
-이 프로젝트는 `uv`를 패키지 매니저 및 실행기로 사용합니다. FastAPI 및 MLX 의존성은 `pyproject.toml`과 `main.py`의 인라인 메타데이터에 정의되어 있어 별도의 설치 과정 없이 즉시 실행 가능합니다.
+이 프로젝트는 `uv`를 패키지 매니저 및 실행기로 사용합니다. GGUF 이미지 모델을 로드하기 위한 의존성(accelerate 등)이 포함되어 있습니다.
 
-**서버 실행 명령어:**
+**패키지 설치 및 서버 실행 명령어:**
 ```bash
-uv run fastapi dev main.py
+# 필수 패키지 설치
+uv sync
+
+# 서버 시작 (기본 포트 28232)
+uv run fastapi dev main.py --port 28232
 ```
-> 서버가 실행되면 기본적으로 `http://127.0.0.1:8000` 주소에서 대기하게 됩니다.
+> 최초 실행 시 FLUX 모델(약 6.7GB)이 자동으로 다운로드되며 상당한 시간이 소요됩니다.
 
 ---
 
@@ -63,9 +67,13 @@ uv run fastapi dev main.py
 OpenClaw를 구동하는 터미널이나 환경에서 아래 파일(`/.env`)을 로드하세요.
 
 ```env
-OPENAI_API_BASE="http://127.0.0.1:8000/v1"
+OPENAI_API_BASE="http://127.0.0.1:28232/v1"
 OPENAI_API_KEY="dummy-key"
 LLM_MODEL="supergemma4"
+
+# FLUX.1 Schnell 다운로드를 위한 Hugging Face 토큰
+# https://huggingface.co/black-forest-labs/FLUX.1-schnell 에서 먼저 약관 동의 후 발급
+HF_TOKEN="your_huggingface_token_here"
 ```
 
 ### 방법 2: OpenClaw 설정 파일 (YAML) 사용
@@ -80,5 +88,6 @@ llm:
 ```
 
 ## 📝 엔드포인트 정보
-- `GET /chat?q=질문`: 간단한 테스트용 단방향 엔드포인트
-- `POST /v1/chat/completions`: OpenClaw 및 외부 호환을 위한 OpenAI API 어댑터 엔드포인트
+- `GET /chat?q=질문`: 간단한 텍스트 생성 테스트용 엔드포인트
+- `POST /v1/chat/completions`: OpenClaw 호환 텍스트 대화(LLM) 생성 API
+- `POST /v1/images/generations`: OpenClaw 호환 이미지(FLUX.1 Schnell) 생성 API (반환 포맷: `url`)

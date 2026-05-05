@@ -116,16 +116,20 @@ import base64
 from io import BytesIO
 import os
 
+hf_token = os.getenv("HF_TOKEN")
+
 print("Loading FLUX.1 Schnell Q4 (GGUF)... This requires >=16GB RAM!")
 transformer = FluxTransformer2DModel.from_single_file(
     "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q4_K_S.gguf",
     quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
     torch_dtype=torch.bfloat16,
+    token=hf_token
 )
 sd_pipe = FluxPipeline.from_pretrained(
     "black-forest-labs/FLUX.1-schnell",
     transformer=transformer,
     torch_dtype=torch.bfloat16,
+    token=hf_token
 )
 sd_pipe = sd_pipe.to("mps")
 
