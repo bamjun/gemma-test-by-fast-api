@@ -136,10 +136,9 @@ sd_pipe = AutoPipelineForText2Image.from_pretrained(
     token=hf_token
 )
 sd_pipe = sd_pipe.to("mps")
-try:
-    sd_pipe.enable_attention_slicing()
-except Exception as e:
-    print(f"Warning: Could not enable attention slicing: {e}")
+
+# MPS(Apple Silicon)에서 float16 정밀도 계산 시 VAE 오버플로우로 인해 검정 이미지가 나오는 것을 방지하기 위해, VAE만 float32로 강제 캐스팅합니다.
+sd_pipe.vae = sd_pipe.vae.to(torch.float32)
 
 class ImageGenerationRequest(BaseModel):
     prompt: str
