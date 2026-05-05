@@ -45,7 +45,7 @@ OpenClaw는 외부 모델과 통신할 때 **OpenAI API 규격**(예: `/v1/chat/
 
 ## 🚀 구동 방법
 
-이 프로젝트는 `uv`를 패키지 매니저 및 실행기로 사용합니다. SDXL Turbo 이미지 모델을 로드하기 위한 의존성(diffusers 등)이 포함되어 있습니다.
+이 프로젝트는 `uv`를 패키지 매니저 및 실행기로 사용합니다. RealVisXL V4.0 Lightning 이미지 모델을 로드하기 위한 의존성(diffusers 등)이 포함되어 있습니다.
 
 **패키지 설치 및 서버 실행 명령어:**
 ```bash
@@ -55,7 +55,7 @@ uv sync
 # 서버 시작 (기본 포트 28232)
 uv run fastapi dev main.py --port 28232
 ```
-> 최초 실행 시 SDXL Turbo 모델이 자동으로 다운로드되며 일정 시간이 소요됩니다.
+> 최초 실행 시 RealVisXL V4.0 Lightning 모델이 자동으로 다운로드되며 일정 시간이 소요됩니다.
 
 ---
 
@@ -89,4 +89,4 @@ llm:
 ## 📝 엔드포인트 정보
 - `GET /chat?q=질문`: 간단한 텍스트 생성 테스트용 엔드포인트
 - `POST /v1/chat/completions`: OpenClaw 호환 텍스트 대화(LLM) 생성 API
-- `POST /v1/images/generations`: OpenClaw 호환 이미지(SDXL Turbo) 생성 API (반환 포맷: `url`)
+- `POST /v1/images/generations`: OpenClaw 호환 고해상도 1024x1024 이미지(RealVisXL V4.0 Lightning) 생성 API (반환 포맷: `url`)
