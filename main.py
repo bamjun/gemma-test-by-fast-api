@@ -110,11 +110,13 @@ async def openclaw_adapter(req: ChatCompletionRequest):
 
 
 # --- 이미지 생성 파이프라인 ---
+import os
+os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
+
 import torch
 from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 import base64
 from io import BytesIO
-import os
 from dotenv import load_dotenv
 from huggingface_hub import login
 
@@ -140,6 +142,10 @@ sd_pipe = FluxPipeline.from_pretrained(
     token=hf_token
 )
 sd_pipe = sd_pipe.to("mps")
+try:
+    sd_pipe.enable_attention_slicing()
+except Exception as e:
+    print(f"Warning: Could not enable attention slicing: {e}")
 
 class ImageGenerationRequest(BaseModel):
     prompt: str
