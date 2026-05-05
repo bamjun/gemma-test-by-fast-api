@@ -129,18 +129,12 @@ if hf_token:
     # diffusers 내부 버그 우회를 위한 전역 로그인 수행
     login(token=hf_token)
 
-print("Loading SDXL-Lightning (4-step)...")
-base = "stabilityai/stable-diffusion-xl-base-1.0"
-repo = "ByteDance/SDXL-Lightning"
-ckpt = "sdxl_lightning_4step_unet.safetensors"
+print("Loading RealVisXL V4.0 Lightning (NSFW-capable 4-step)...")
+repo_id = "SG161222/RealVisXL_V4.0_Lightning"
 
-# UNet 로드 및 Lightning 가중치 적용 (MPS 버그 방지를 위해 bfloat16 사용)
-unet = UNet2DConditionModel.from_config(base, subfolder="unet").to(torch.bfloat16)
-unet.load_state_dict(load_file(hf_hub_download(repo, ckpt)))
-
+# 제한이 없는(Uncensored) 실사형 Lightning 병합 모델 로드
 sd_pipe = StableDiffusionXLPipeline.from_pretrained(
-    base, 
-    unet=unet, 
+    repo_id, 
     torch_dtype=torch.bfloat16, 
     variant="fp16",
     token=hf_token
