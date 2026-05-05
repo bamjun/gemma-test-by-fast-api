@@ -115,8 +115,16 @@ from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConf
 import base64
 from io import BytesIO
 import os
+from dotenv import load_dotenv
+from huggingface_hub import login
+
+# 환경 변수 명시적 로드 (.env)
+load_dotenv()
 
 hf_token = os.getenv("HF_TOKEN")
+if hf_token:
+    # diffusers의 from_single_file 내부에서 token 파라미터를 누락하는 버그를 우회하기 위해 전역 로그인 수행
+    login(token=hf_token)
 
 print("Loading FLUX.1 Schnell Q4 (GGUF)... This requires >=16GB RAM!")
 transformer = FluxTransformer2DModel.from_single_file(
