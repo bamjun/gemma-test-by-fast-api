@@ -3,6 +3,10 @@
 # dependencies = [
 #     "fastapi[standard]",
 #     "mlx-lm",
+#     "diffusers",
+#     "torch",
+#     "transformers",
+#     "pillow",
 # ]
 # ///
 
@@ -96,3 +100,52 @@ async def openclaw_adapter(req: ChatCompletionRequest):
             }
         ]
     }
+
+
+# --- 이미지 생성 모델 (Stable Diffusion 1.5) 추가 ---
+import torch
+from diffusers import StableDiffusionPipeline
+import base64
+from io import BytesIO
+
+# SD 1.5 파이프라인 로딩 (Apple Silicon 'mps' 사용 및 float16 메모리 최적화)
+print("Loading Stable Diffusion 1.5...")
+sd_pipe = StableDiffusionPipeline.from_pretrained(
+    "runwayml/stable-diffusion-v1-5", 
+    torch_dtype=torch.float16,
+    safety_checker=None  # Mac에서 메모리 문제 방지를 위해 보통 끕니다
+)
+sd_pipe = sd_pipe.to("mps")
+
+class ImageGenerationRequest(BaseModel):
+    prompt: str
+    n: Optional[int] = 1
+    size: Optional[str] = "512x512"
+
+@app.post("/v1/images/generations")
+async def openclaw_image_adapter(req: ImageGenerationRequest):
+    # 크기 파싱
+    width, height = 512, 512
+    if req.size and "x" in req.size:
+        parts = req.size.split("x")
+        if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+            width, height = int(parts[0]), int(parts[1])
+            
+    # 이미지 생성 (MPS 가속)
+    image = sd_pipe(req.prompt, width=width, height=height, num_inference_steps=25).images[0]
+    
+    # Base64 문자열로 인코딩
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
+    
+    # OpenAI 이미지 API 호환 규격으로 반환
+    return {
+        "created": int(time.time()),
+        "data": [
+            {
+                "b64_json": img_str
+            }
+        ]
+    }
+
