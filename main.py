@@ -109,18 +109,23 @@ async def openclaw_adapter(req: ChatCompletionRequest):
     }
 
 
-# --- 이미지 생성 모델 (Stable Diffusion 1.5) 추가 ---
+# --- 이미지 생성 파이프라인 ---
 import torch
-from diffusers import StableDiffusionPipeline
+from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
 import base64
 from io import BytesIO
+import os
 
-# SD 1.5 파이프라인 로딩 (Apple Silicon 'mps' 사용 및 float16 메모리 최적화)
-print("Loading Stable Diffusion 1.5...")
-sd_pipe = StableDiffusionPipeline.from_pretrained(
-    "runwayml/stable-diffusion-v1-5", 
-    torch_dtype=torch.float16,
-    safety_checker=None  # Mac에서 메모리 문제 방지를 위해 보통 끕니다
+print("Loading FLUX.1 Schnell Q4 (GGUF)... This requires >=16GB RAM!")
+transformer = FluxTransformer2DModel.from_single_file(
+    "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q4_K_S.gguf",
+    quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
+    torch_dtype=torch.bfloat16,
+)
+sd_pipe = FluxPipeline.from_pretrained(
+    "black-forest-labs/FLUX.1-schnell",
+    transformer=transformer,
+    torch_dtype=torch.bfloat16,
 )
 sd_pipe = sd_pipe.to("mps")
 
@@ -139,7 +144,8 @@ async def openclaw_image_adapter(req_body: ImageGenerationRequest, request: Requ
             width, height = int(parts[0]), int(parts[1])
             
     # 이미지 생성 (MPS 가속)
-    image = sd_pipe(req_body.prompt, width=width, height=height, num_inference_steps=25).images[0]
+    # Schnell 모델은 4스텝만으로 고품질 이미지를 생성합니다.
+    image = sd_pipe(req_body.prompt, width=width, height=height, num_inference_steps=4).images[0]
     
     # 고유한 파일명 생성 및 하드디스크에 저장
     filename = f"{uuid.uuid4().hex}.png"
