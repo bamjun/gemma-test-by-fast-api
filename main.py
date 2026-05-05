@@ -114,7 +114,7 @@ import os
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
 import torch
-from diffusers import FluxPipeline, FluxTransformer2DModel, GGUFQuantizationConfig
+from diffusers import AutoPipelineForText2Image
 import base64
 from io import BytesIO
 from dotenv import load_dotenv
@@ -128,17 +128,11 @@ if hf_token:
     # diffusers의 from_single_file 내부에서 token 파라미터를 누락하는 버그를 우회하기 위해 전역 로그인 수행
     login(token=hf_token)
 
-print("Loading FLUX.1 Schnell Q4 (GGUF)... This requires >=16GB RAM!")
-transformer = FluxTransformer2DModel.from_single_file(
-    "https://huggingface.co/city96/FLUX.1-schnell-gguf/blob/main/flux1-schnell-Q4_K_S.gguf",
-    quantization_config=GGUFQuantizationConfig(compute_dtype=torch.bfloat16),
-    torch_dtype=torch.bfloat16,
-    token=hf_token
-)
-sd_pipe = FluxPipeline.from_pretrained(
-    "black-forest-labs/FLUX.1-schnell",
-    transformer=transformer,
-    torch_dtype=torch.bfloat16,
+print("Loading SDXL Turbo...")
+sd_pipe = AutoPipelineForText2Image.from_pretrained(
+    "stabilityai/sdxl-turbo",
+    torch_dtype=torch.float16,
+    variant="fp16",
     token=hf_token
 )
 sd_pipe = sd_pipe.to("mps")
@@ -162,8 +156,8 @@ async def openclaw_image_adapter(req_body: ImageGenerationRequest, request: Requ
             width, height = int(parts[0]), int(parts[1])
             
     # 이미지 생성 (MPS 가속)
-    # Schnell 모델은 4스텝만으로 고품질 이미지를 생성합니다.
-    image = sd_pipe(req_body.prompt, width=width, height=height, num_inference_steps=4).images[0]
+    # SDXL Turbo 모델은 1~4스텝으로 고품질 이미지를 생성합니다.
+    image = sd_pipe(req_body.prompt, width=width, height=height, num_inference_steps=4, guidance_scale=0.0).images[0]
     
     # 고유한 파일명 생성 및 하드디스크에 저장
     filename = f"{uuid.uuid4().hex}.png"
